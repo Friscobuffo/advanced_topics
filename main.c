@@ -95,17 +95,15 @@ float compute_pearson_correlation(int user_1_array_len, int* array_user_1_movies
 
 float compute_jaccard_index(int user_1_array_len, int* array_user_1_movies_ratings, int* array_user_1_movies_ids,
                             int user_2_array_len, int* array_user_2_movies_ratings, int* array_user_2_movies_ids) {
-    int numerator = 0.0;
-    int denominator = 0.0;
-    for (int i = 0; i < user_1_array_len; i++) {
-        denominator++;
+    int numerator = 0;
+    int denominator = user_1_array_len;
+    for (int i = 0; i < user_1_array_len; i++)
         if (is_in_int_array(array_user_2_movies_ids, array_user_1_movies_ids[i], user_2_array_len))
             numerator++;
-    }
     for (int i = 0; i < user_2_array_len; i++)
-        if (!is_in_int_array(array_user_1_movies_ids, array_user_2_movies_ids[i], user_2_array_len))
+        if (!is_in_int_array(array_user_1_movies_ids, array_user_2_movies_ids[i], user_1_array_len))
             denominator++;
-    return numerator/(float)denominator;
+    return 2*(0.5-numerator/(float)denominator);
 }
 
 void compute_top_n_similar_users(int n, Csv* csv_ptr, int user_id, int* array_top_n_users_ids, 
@@ -389,7 +387,7 @@ int main() {
     }
     
     int group_size = 3;
-    int array_group_ids[3] = {1, 2, 500};
+    int array_group_ids[3] = {10, 37, 500};
     int array_movies_ids[10];
     float array_aggregated_scores[10];
     compute_group_recommendations(group_size, array_group_ids, csv_ptr, compute_pearson_correlation, average_of_float_array, array_movies_ids, array_aggregated_scores);  
