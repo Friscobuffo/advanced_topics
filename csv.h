@@ -5,21 +5,21 @@
 #include <stdlib.h>
 #include <string.h>
 
-struct Csv {
+struct Dataset {
     int size;
     char** rows;
     int n_fields;
 };
 
-typedef struct Csv Csv;
+typedef struct Dataset Dataset;
 
-Csv* read_csv(char* file_path) {
+Dataset* read_csv(char* file_path) {
     FILE *file;
     char line[1024];
     file = fopen(file_path, "r");
     int max_size = 1024;
     int size = 0;
-    Csv* csv = (Csv*)malloc(sizeof(Csv));
+    Dataset* csv = (Dataset*)malloc(sizeof(Dataset));
     csv->rows = (char**)malloc(max_size*sizeof(char*));
     while (fgets(line, 1024, file)) {
         line[strcspn(line, "\n")] = '\0';
@@ -41,7 +41,7 @@ Csv* read_csv(char* file_path) {
     return csv;
 }
 
-char* get_row_field(Csv* csv, int field_index, int row_index) {
+char* get_row_field(Dataset* csv, int field_index, int row_index) {
     if (field_index>=csv->n_fields) {
         printf("field index out of bounds\n");
         return NULL;
@@ -67,7 +67,7 @@ char* get_row_field(Csv* csv, int field_index, int row_index) {
     return output;
 }
 
-void free_csv(Csv* csv_ptr) {
+void free_dataset(Dataset* csv_ptr) {
     for (int i = 0; i < csv_ptr->size; i++)
         free(csv_ptr->rows[i]);
     free(csv_ptr->rows);

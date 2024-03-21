@@ -7,7 +7,7 @@
 #include "utils.h"
 
 // assumes user id is in csv file and csv file is ordered by id
-int find_user_row_index(Csv* csv_ptr, int user_id) {
+int find_user_row_index(Dataset* csv_ptr, int user_id) {
     int start = 1;
     int end = csv_ptr->size;
     int row_index = (start+end)/2;
@@ -38,7 +38,7 @@ int find_user_row_index(Csv* csv_ptr, int user_id) {
     return row_index;
 }
 
-void get_movies_ids_ratings_by_user(int user_id, Csv* csv_ptr, int starting_index, int** array_user_movies_ids_ptr,
+void get_movies_ids_ratings_by_user(int user_id, Dataset* csv_ptr, int starting_index, int** array_user_movies_ids_ptr,
                                     int** array_user_movies_ratings_ptr, int* array_len_ptr) {
     *array_len_ptr = 0;
     while (1) {
@@ -98,15 +98,15 @@ float compute_jaccard_index(int user_1_array_len, int* array_user_1_movies_ratin
     int numerator = 0;
     int denominator = user_1_array_len;
     for (int i = 0; i < user_1_array_len; i++)
-        if (is_in_int_array(array_user_2_movies_ids, array_user_1_movies_ids[i], user_2_array_len))
+        if (isInIntArray(array_user_2_movies_ids, array_user_1_movies_ids[i], user_2_array_len))
             numerator++;
     for (int i = 0; i < user_2_array_len; i++)
-        if (!is_in_int_array(array_user_1_movies_ids, array_user_2_movies_ids[i], user_1_array_len))
+        if (!isInIntArray(array_user_1_movies_ids, array_user_2_movies_ids[i], user_1_array_len))
             denominator++;
     return 2*(0.5-numerator/(float)denominator);
 }
 
-void compute_top_n_similar_users(int n, Csv* csv_ptr, int user_id, int* array_top_n_users_ids, 
+void compute_top_n_similar_users(int n, Dataset* csv_ptr, int user_id, int* array_top_n_users_ids, 
                                  float* array_top_n_user_scores, int* number_of_top_users_ptr,
                                  float (*function_compute_similarity)(int, int*, int*, int, int*, int*)) {
     *number_of_top_users_ptr = 0;
@@ -131,7 +131,7 @@ void compute_top_n_similar_users(int n, Csv* csv_ptr, int user_id, int* array_to
         if (!isnan(score)) {
             pos = insert_in_float_sorted_array(array_top_n_user_scores, *number_of_top_users_ptr-1, score, n);
             if (pos != -1) {
-                insert_in_int_array(array_top_n_users_ids, n, pos, new_user_id);
+                insertInIntArray(array_top_n_users_ids, n, pos, new_user_id);
                 if (*number_of_top_users_ptr != n) *number_of_top_users_ptr = *number_of_top_users_ptr + 1;
             }
         }
@@ -144,7 +144,7 @@ void compute_top_n_similar_users(int n, Csv* csv_ptr, int user_id, int* array_to
     free(array_user_movies_ratings);
 }
 
-float compute_similarity_between_users_by_id(Csv* csv_ptr, int user_1_id, int user_2_id, 
+float compute_similarity_between_users_by_id(Dataset* csv_ptr, int user_1_id, int user_2_id, 
                                              float (*function_compute_similarity)(int, int*, int*, int, int*, int*)) {
     int row_index_user_1 = find_user_row_index(csv_ptr, user_1_id);
     int* array_user_1_movies_ids;
@@ -165,7 +165,7 @@ float compute_similarity_between_users_by_id(Csv* csv_ptr, int user_1_id, int us
     return similarity;
 }
 
-int get_user_movie_rating(Csv* csv_ptr, int user_id, int movie_id, int user_row_index) {
+int get_user_movie_rating(Dataset* csv_ptr, int user_id, int movie_id, int user_row_index) {
     for (int row_index = user_row_index; row_index < csv_ptr->size; row_index++) {
         char* string_new_user_id = get_row_field(csv_ptr, 0, row_index);
         int new_user_id = atoi(string_new_user_id);
@@ -184,7 +184,7 @@ int get_user_movie_rating(Csv* csv_ptr, int user_id, int movie_id, int user_row_
     return -1;
 }
 
-float predict_user_rating_for_movie(Csv* csv_ptr, int user_id, int movie_id, int top_n_user_number,
+float predict_user_rating_for_movie(Dataset* csv_ptr, int user_id, int movie_id, int top_n_user_number,
                                     float (*function_compute_similarity)(int, int*, int*, int, int*, int*)) {
     int* array_user_movies_ids;
     int* array_user_movies_ratings;
@@ -226,7 +226,7 @@ float predict_user_rating_for_movie(Csv* csv_ptr, int user_id, int movie_id, int
         if (!isnan(score)) {
             pos = insert_in_float_sorted_array(array_top_n_users_scores, last_elem_index, score, top_n_user_number);
             if (pos != -1) {
-                insert_in_int_array(array_top_n_users_ids, top_n_user_number, pos, new_user_id);
+                insertInIntArray(array_top_n_users_ids, top_n_user_number, pos, new_user_id);
                 if (last_elem_index < top_n_user_number-1) last_elem_index++;
                 float avg_rating_similar_user = 0.0;
                 for (int i = 0; i < new_user_array_len; i++)
@@ -261,7 +261,7 @@ float predict_user_rating_for_movie(Csv* csv_ptr, int user_id, int movie_id, int
 }
 
 void compute_best_n_movies_for_user(int n, int* array_best_n_movies_ids, float* array_best_n_movies_scores, int* num_best_movies_ptr,
-                                    Csv* csv_ptr, int user_id, float (*function_compute_similarity)(int, int*, int*, int, int*, int*)) {
+                                    Dataset* csv_ptr, int user_id, float (*function_compute_similarity)(int, int*, int*, int, int*, int*)) {
     int array_top_similar_users_ids[n];
     float array_top_similar_users_scores[n];
     int n_top_similar_users;
@@ -280,13 +280,13 @@ void compute_best_n_movies_for_user(int n, int* array_best_n_movies_ids, float* 
             char* string_movie_id = get_row_field(csv_ptr, 1, j);
             int movie_id = atoi(string_movie_id);
             free(string_movie_id);
-            if (is_in_int_array(array_best_n_movies_ids, movie_id, *num_best_movies_ptr))
+            if (isInIntArray(array_best_n_movies_ids, movie_id, *num_best_movies_ptr))
                 continue;
             if (get_user_movie_rating(csv_ptr, user_id, movie_id, user_row_index) == -1) {
                 float score = predict_user_rating_for_movie(csv_ptr, user_id, movie_id, n, function_compute_similarity);
                 int pos = insert_in_float_sorted_array(array_best_n_movies_scores, (*num_best_movies_ptr)-1, score, n);
                 if (pos != -1) {
-                    insert_in_int_array(array_best_n_movies_ids, *num_best_movies_ptr, pos, movie_id);
+                    insertInIntArray(array_best_n_movies_ids, *num_best_movies_ptr, pos, movie_id);
                     if (*num_best_movies_ptr < n) *num_best_movies_ptr = *num_best_movies_ptr+1;
                     float avg_rating_similar_user = 0.0;
                 }
@@ -295,7 +295,7 @@ void compute_best_n_movies_for_user(int n, int* array_best_n_movies_ids, float* 
     }
 }
 
-void compute_group_recommendations(int group_size, int* array_group_ids, Csv* csv_ptr, float (*function_compute_similarity)(int, int*, int*, int, int*, int*),
+void compute_group_recommendations(int group_size, int* array_group_ids, Dataset* csv_ptr, float (*function_compute_similarity)(int, int*, int*, int, int*, int*),
                                     float (*aggregation_function)(float*, int), int* array_movies_ids_output, float* array_movies_scores_output) {
     int* array_of_arrays_movies_suggestions_for_user[group_size];
     int num_best_movies_for_user[group_size];
@@ -314,7 +314,7 @@ void compute_group_recommendations(int group_size, int* array_group_ids, Csv* cs
         int* array_best_movies_ids = array_of_arrays_movies_suggestions_for_user[j];
         for (int k = 0; k < num_best_movies_for_user[j]; k++) {
             int movie_id = array_best_movies_ids[k];
-            if (is_in_int_array(array_movies_ids, movie_id, i)) continue;
+            if (isInIntArray(array_movies_ids, movie_id, i)) continue;
             array_movies_ids[i] = movie_id;
             float* array_movies_scores = (float*)malloc(sizeof(float)*group_size);
             for (int l = 0; l < group_size; l++) {
@@ -347,7 +347,7 @@ void compute_group_recommendations(int group_size, int* array_group_ids, Csv* cs
     }
 }
 
-void compute_group_recommendations_with_disagreement(int group_size, int* array_group_ids, Csv* csv_ptr, int* array_movies_ids_output,
+void compute_group_recommendations_with_disagreement(int group_size, int* array_group_ids, Dataset* csv_ptr, int* array_movies_ids_output,
                                     float (*function_compute_similarity)(int, int*, int*, int, int*, int*), float* array_movies_scores_output,
                                     float (*aggregation_function)(float*, int)) {
     int array_movies_ids[10];
@@ -362,7 +362,7 @@ void compute_group_recommendations_with_disagreement(int group_size, int* array_
             int movie_id = array_movies_ids[j];
             float predict = predict_user_rating_for_movie(csv_ptr, user_id, movie_id, 10, function_compute_similarity);
             int pos = insert_in_float_sorted_array(array_user_movies_scores, j-1, predict, 10);
-            insert_in_int_array(array_user_movies_order_preference, 10, pos, movie_id);
+            insertInIntArray(array_user_movies_order_preference, 10, pos, movie_id);
         }
         array_of_arrays_user_movies_order_preference[i] = array_user_movies_order_preference;
     }
@@ -409,7 +409,7 @@ int main() {
     double elapsed;
     start = clock();
 
-    Csv* csv_ptr = read_csv("ratings.csv");
+    Dataset* csv_ptr = read_csv("ratings.csv");
     printf("csv number of rows: [%d]\n", csv_ptr->size);
     int user_id = 500;
     int array_top_similar_users_ids[N];
@@ -417,16 +417,16 @@ int main() {
     int n=0;
     compute_top_n_similar_users(N, csv_ptr, user_id, array_top_similar_users_ids, array_top_similar_users_scores, &n, compute_pearson_correlation);
     printf("\nmost similar users to user [%d]:\n", user_id);
-    print_int_array(array_top_similar_users_ids, n);
+    printIntArray(array_top_similar_users_ids, n);
     printf("scores:\n");
-    print_float_array(array_top_similar_users_scores, n);
+    printFloatArray(array_top_similar_users_scores, n);
 
     int user_1_id = 43;
     int user_2_id = 500;
     float similarity =  compute_similarity_between_users_by_id(csv_ptr, user_1_id, user_2_id, compute_pearson_correlation);
     printf("\nsimilarity between user [%d] and user [%d]: [%f]\n", user_1_id, user_2_id, similarity);
 
-    int movie_id = 471;
+    int movie_id = 430;
     float predict = predict_user_rating_for_movie(csv_ptr, user_id, movie_id, N, compute_pearson_correlation);
     printf("predict user [%d] movie [%d] rating: [%f]\n", user_id, movie_id, predict);
 
@@ -436,35 +436,35 @@ int main() {
     printf("\nmovies suggestions for user [%d]\n", user_id);
     compute_best_n_movies_for_user(N, array_best_n_movies_ids, array_best_n_movies_scores, &num_best_movies, csv_ptr, user_id, compute_pearson_correlation);
     printf("best movies ids:\n");
-    print_int_array(array_best_n_movies_ids, num_best_movies);
+    printIntArray(array_best_n_movies_ids, num_best_movies);
     printf("best movies predicted scores:\n");
-    print_float_array(array_best_n_movies_scores, num_best_movies);
+    printFloatArray(array_best_n_movies_scores, num_best_movies);
     
     int group_size = 3;
     int array_group_ids[3] = {10, 37, 500};
     int array_movies_ids[10];
     float array_aggregated_scores[10];
     printf("\ngroup: ");
-    print_int_array(array_group_ids, group_size);
+    printIntArray(array_group_ids, group_size);
     compute_group_recommendations(group_size, array_group_ids, csv_ptr, compute_pearson_correlation, average_of_float_array, array_movies_ids, array_aggregated_scores);  
     printf("group recommendations (pearson coefficient + average aggregation):\nbest movies ids:\n");
-    print_int_array(array_movies_ids, 10);
+    printIntArray(array_movies_ids, 10);
     printf("best movies predicted scores:\n");
-    print_float_array(array_aggregated_scores, 10);
+    printFloatArray(array_aggregated_scores, 10);
 
     compute_group_recommendations(group_size, array_group_ids, csv_ptr, compute_jaccard_index, find_min_in_float_array, array_movies_ids, array_aggregated_scores);  
     printf("\ngroup recommendations (jaccard index + least misery):\nbest movies ids:\n");
-    print_int_array(array_movies_ids, 10);
+    printIntArray(array_movies_ids, 10);
     printf("best movies predicted scores:\n");
-    print_float_array(array_aggregated_scores, 10);
+    printFloatArray(array_aggregated_scores, 10);
 
     compute_group_recommendations_with_disagreement(group_size, array_group_ids, csv_ptr, array_movies_ids, compute_pearson_correlation, array_aggregated_scores, average_of_float_array);  
     printf("\ngroup recommendations (pearson coefficient + average aggregation + disagreement):\nbest movies ids:\n");
-    print_int_array(array_movies_ids, 10);
+    printIntArray(array_movies_ids, 10);
     printf("best movies predicted scores:\n");
-    print_float_array(array_aggregated_scores, 10);
+    printFloatArray(array_aggregated_scores, 10);
 
-    free_csv(csv_ptr);
+    free_dataset(csv_ptr);
 
     end = clock();
     elapsed = ((double)(end-start))/CLOCKS_PER_SEC;

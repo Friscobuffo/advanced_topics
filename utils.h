@@ -4,14 +4,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int is_in_int_array(int arr[], int num, int size) {
+int isInIntArray(int arr[], int num, int size) {
     for (int i = 0; i < size; i++)
         if (arr[i] == num)
             return 1;
     return 0;
 }
 
-void insert_in_int_array(int* array, int size, int index, int value) {
+void insertInIntArray(int* array, int size, int index, int value) {
     for (int i = size-1; i > index; i--) {
         array[i] = array[i-1];
     }
@@ -83,7 +83,7 @@ int pos_in_int_array(int* array, int size, int target) {
     return -1;
 }
 
-void print_int_array(int* array, int size) {
+void printIntArray(int* array, int size) {
     printf("[");
     for (int i = 0; i < size; i++) {
         printf("%d", array[i]);
@@ -93,7 +93,7 @@ void print_int_array(int* array, int size) {
     printf("]\n");
 }
 
-void print_float_array(float* array, int size) {
+void printFloatArray(float* array, int size) {
     printf("[");
     for (int i = 0; i < size; i++) {
         printf("%.2f", array[i]);
