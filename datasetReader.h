@@ -6,6 +6,7 @@
 #include <string.h>
 #include "utils.h"
 
+// user struct
 typedef struct {
     int id;
     int* arrayMoviesIds;
@@ -15,12 +16,15 @@ typedef struct {
     HashMap* mapMovieIdRating;
 } User;
 
+// dataset struct
 typedef struct {
     int numUsers;
     User** arrayUsers;
 } Dataset;
 
-void populateUsersHashMaps(Dataset* datasetPtr) {
+// for each user in the dataset, it populates his hash map with
+// movies ids as keys and ratings as values
+void _populateUsersHashMaps(Dataset* datasetPtr) {
     for (int i = 0; i < datasetPtr->numUsers; i++) {
         User* user = datasetPtr->arrayUsers[i];
         HashMap* hashMap = createHashMap();
@@ -33,7 +37,8 @@ void populateUsersHashMaps(Dataset* datasetPtr) {
     }
 }
 
-void computeAveragesRatings(Dataset* datasetPtr) {
+// computes average ratings for each user in the dataset
+void _computeAveragesRatings(Dataset* datasetPtr) {
     for (int i = 0; i < datasetPtr->numUsers; i++) {
         float avg = 0.0;
         int numRatings = datasetPtr->arrayUsers[i]->numRatings;
@@ -45,15 +50,20 @@ void computeAveragesRatings(Dataset* datasetPtr) {
     }
 }
 
+/* populates the dataset struct with data from csv
+   assumes each csv line is at most 1024 chars long
+   assumes csv is in format <userId>,<movieId>,<rating>,<timestamp>
+   (but timestamps are actually skipped)
+*/
 Dataset* readCsv(char* file_path) {
     FILE *file;
     char line[1024];
     file = fopen(file_path, "r");
     int maxSize = 1024;
     int numUsers = 0;
-    Dataset* dataset = (Dataset*)malloc(sizeof(Dataset));
-    dataset->arrayUsers = (User**)malloc(maxSize*sizeof(User*));
-    fgets(line, 1024, file); // skipping csv labels row
+    Dataset* datasetPtr = (Dataset*)malloc(sizeof(Dataset));
+    datasetPtr->arrayUsers = (User**)malloc(maxSize*sizeof(User*));
+    fgets(line, 1024, file); // skipping csv labels row (the first row)
     // getting first user
     fgets(line, 1024, file);
     line[strcspn(line, "\n")] = '\0';
@@ -64,47 +74,47 @@ Dataset* readCsv(char* file_path) {
     token = strtok(NULL, ",");
     float rating = atof(token);
 
-    int* arrayPrevUserMoviesIds = (int*)malloc(256*sizeof(int));
-    float* arrayPrevUserRatings = (float*)malloc(256*sizeof(float));
     int bufferMaxSize = 256;
+    int* arrayPrevUserMoviesIds = (int*)malloc(bufferMaxSize*sizeof(int));
+    float* arrayPrevUserRatings = (float*)malloc(bufferMaxSize*sizeof(float));
     int prevUserNumRatings = 1;
     arrayPrevUserMoviesIds[0] = movieId;
     arrayPrevUserRatings[0] = rating;
 
     while (fgets(line, 1024, file)) {
         line[strcspn(line, "\n")] = '\0';
-        char* token = strtok(line, ",");
+        token = strtok(line, ",");
         int userId = atoi(token);
         token = strtok(NULL, ",");
         int movieId = atoi(token);
         token = strtok(NULL, ",");
         float rating = atof(token);
 
-        if (userId == prevUserId) { // adding movie to prev user
+        if (userId == prevUserId) { // if its still the prev user we add the movie infos
             if (prevUserNumRatings == bufferMaxSize) {
-                arrayPrevUserMoviesIds = (int*)realloc(arrayPrevUserMoviesIds, 2*bufferMaxSize*sizeof(int));
-                arrayPrevUserRatings = (float*)realloc(arrayPrevUserRatings, 2*bufferMaxSize*sizeof(float));
                 bufferMaxSize *= 2;
+                arrayPrevUserMoviesIds = (int*)realloc(arrayPrevUserMoviesIds, bufferMaxSize*sizeof(int));
+                arrayPrevUserRatings = (float*)realloc(arrayPrevUserRatings, bufferMaxSize*sizeof(float));
             }
             arrayPrevUserMoviesIds[prevUserNumRatings] = movieId;
             arrayPrevUserRatings[prevUserNumRatings] = rating;
             prevUserNumRatings++;
         }
-        else { // adding prev user
+        else { // if the user is new we add prev user and new user becomes prev user
             if (numUsers == maxSize) {
-                dataset->arrayUsers = (User**)realloc(dataset->arrayUsers, 2*maxSize*sizeof(User*));
-                maxSize = maxSize*2;
+                maxSize *= 2;
+                datasetPtr->arrayUsers = (User**)realloc(datasetPtr->arrayUsers, maxSize*sizeof(User*));
             }
-            User* user = (User*)malloc(sizeof(User));
-            user->id = prevUserId;
-            user->numRatings = prevUserNumRatings;
-            user->arrayMoviesIds = (int*)malloc(prevUserNumRatings*sizeof(int));
-            user->arrayMoviesRatings = (float*)malloc(prevUserNumRatings*sizeof(float));
+            User* userPtr = (User*)malloc(sizeof(User));
+            userPtr->id = prevUserId;
+            userPtr->numRatings = prevUserNumRatings;
+            userPtr->arrayMoviesIds = (int*)malloc(prevUserNumRatings*sizeof(int));
+            userPtr->arrayMoviesRatings = (float*)malloc(prevUserNumRatings*sizeof(float));
             for (int i = 0; i < prevUserNumRatings; i++) {
-                user->arrayMoviesIds[i] = arrayPrevUserMoviesIds[i];
-                user->arrayMoviesRatings[i] = arrayPrevUserRatings[i];
+                userPtr->arrayMoviesIds[i] = arrayPrevUserMoviesIds[i];
+                userPtr->arrayMoviesRatings[i] = arrayPrevUserRatings[i];
             }
-            dataset->arrayUsers[numUsers] = user;
+            datasetPtr->arrayUsers[numUsers] = userPtr;
             numUsers++;
             prevUserId = userId;
             prevUserNumRatings = 1;
@@ -114,46 +124,45 @@ Dataset* readCsv(char* file_path) {
     }
     // adding last user
     if (numUsers == maxSize) {
-        dataset->arrayUsers = (User**)realloc(dataset->arrayUsers, 1+maxSize*sizeof(User*));
         maxSize++;
+        datasetPtr->arrayUsers = (User**)realloc(datasetPtr->arrayUsers, maxSize*sizeof(User*));
     }
-    User* user = (User*)malloc(sizeof(User));
-    user->id = prevUserId;
-    user->numRatings = prevUserNumRatings;
-    user->arrayMoviesIds = (int*)malloc(prevUserNumRatings*sizeof(int));
-    user->arrayMoviesRatings = (float*)malloc(prevUserNumRatings*sizeof(float));
+    User* userPtr = (User*)malloc(sizeof(User));
+    userPtr->id = prevUserId;
+    userPtr->numRatings = prevUserNumRatings;
+    userPtr->arrayMoviesIds = (int*)malloc(prevUserNumRatings*sizeof(int));
+    userPtr->arrayMoviesRatings = (float*)malloc(prevUserNumRatings*sizeof(float));
     for (int i = 0; i < prevUserNumRatings; i++) {
-        user->arrayMoviesIds[i] = arrayPrevUserMoviesIds[i];
-        user->arrayMoviesRatings[i] = arrayPrevUserRatings[i];
+        userPtr->arrayMoviesIds[i] = arrayPrevUserMoviesIds[i];
+        userPtr->arrayMoviesRatings[i] = arrayPrevUserRatings[i];
     }
-
-    dataset->arrayUsers[numUsers] = user;
+    datasetPtr->arrayUsers[numUsers] = userPtr;
     numUsers++;
-    dataset->numUsers = numUsers;
-    dataset->arrayUsers = (User**)realloc(dataset->arrayUsers, numUsers*sizeof(User*));
+    datasetPtr->numUsers = numUsers;
+    datasetPtr->arrayUsers = (User**)realloc(datasetPtr->arrayUsers, numUsers*sizeof(User*));
     
     free(arrayPrevUserMoviesIds);
     free(arrayPrevUserRatings);
     fclose(file);
-    computeAveragesRatings(dataset);
-    populateUsersHashMaps(dataset);
-    return dataset;
+    _computeAveragesRatings(datasetPtr);
+    _populateUsersHashMaps(datasetPtr);
+    return datasetPtr;
 }
 
-User* getUserById(Dataset* dataset, int id) {
-    return dataset->arrayUsers[id-1];
+User* getUserById(Dataset* datasetPtr, int id) {
+    return datasetPtr->arrayUsers[id-1];
 }
 
-void freeUser(User* user) {
-    free(user->arrayMoviesIds);
-    free(user->arrayMoviesRatings);
-    freeHashMap(user->mapMovieIdRating);
-    free(user);
+void _freeUser(User* userPtr) {
+    free(userPtr->arrayMoviesIds);
+    free(userPtr->arrayMoviesRatings);
+    freeHashMap(userPtr->mapMovieIdRating);
+    free(userPtr);
 }
 
 void freeDataset(Dataset* datasetPtr) {
     for (int i = 0; i < datasetPtr->numUsers; i++)
-        freeUser(datasetPtr->arrayUsers[i]);
+        _freeUser(datasetPtr->arrayUsers[i]);
     free(datasetPtr->arrayUsers);
     free(datasetPtr);
 }
