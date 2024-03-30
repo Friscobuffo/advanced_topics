@@ -1,17 +1,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
 #include <time.h>
 #include "datasetReader.h"
 #include "project.h"
 #include "utils.h"
 
-#define N 10
-
 int main() {
+    time_t startTotal, endTotal;
     time_t start, end;
     double elapsed;
+    startTotal = clock();
 
     // reading csv
     start = clock();
@@ -112,14 +111,18 @@ int main() {
     printf("suggestions for group at iteration [%d]\n", 0);
     printIntArray(arrayOfArraysPreviouslySuggestedMoviesIdsAtIteration[0], arrayNumSuggestedMoviesAtIteration[0]);
     printf("suggestions for group at iteration [%d]\n", 1);
-    printIntArray(arrayOfArraysPreviouslySuggestedMoviesIdsAtIteration[1], arrayNumSuggestedMoviesAtIteration[0]);
+    printIntArray(arrayOfArraysPreviouslySuggestedMoviesIdsAtIteration[1], arrayNumSuggestedMoviesAtIteration[1]);
     printf("suggestions for group at iteration [%d]\n", 2);
-    printIntArray(arrayOfArraysPreviouslySuggestedMoviesIdsAtIteration[2], arrayNumSuggestedMoviesAtIteration[0]);
+    printIntArray(arrayOfArraysPreviouslySuggestedMoviesIdsAtIteration[2], arrayNumSuggestedMoviesAtIteration[2]);
     printf("time to compute group recommentations sequentially (3 iterations): [%f sec]\n", elapsed);
     
     // freeing heap
     freeDataset(datasetPtr);
     for (int i = 0; i < 3; i++)
         free(arrayOfArraysPreviouslySuggestedMoviesIdsAtIteration[i]);
+
+    endTotal = clock();
+    elapsed = ((double)(endTotal-startTotal))/CLOCKS_PER_SEC;
+    printf("\ntotal script time: [%f sec]\n", elapsed);
     return 0;
 }
