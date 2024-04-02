@@ -285,7 +285,7 @@ float alphaStandardDeviation(float* arraySatisfactionPerUser, int groupSize) {
     average = average / groupSize;
     for (int i = 0; i < groupSize; i++)
         numerator += pow(arraySatisfactionPerUser[i]-average, 2);
-    return sqrt(numerator/(groupSize-1));
+    return sqrt(sqrt(numerator/(groupSize-1)));
 }
 
 #define MAX_GROUP_SUGGESTIONS_NUM 25
