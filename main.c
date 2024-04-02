@@ -103,9 +103,9 @@ int main() {
     int arrayNumSuggestedMoviesAtIteration[totalIterations];
     int numSuggestions = 3;
     printf("\nsequential suggestions for group:\n");
-    computeGroupRecommendationsSequential(numSuggestions, groupSize, groupIds, datasetPtr, computePearsonCorrelation, 0, arrayOfArraysPreviouslySuggestedMoviesIdsAtIteration, arrayNumSuggestedMoviesAtIteration);
-    computeGroupRecommendationsSequential(numSuggestions, groupSize, groupIds, datasetPtr, computePearsonCorrelation, 1, arrayOfArraysPreviouslySuggestedMoviesIdsAtIteration, arrayNumSuggestedMoviesAtIteration);
-    computeGroupRecommendationsSequential(numSuggestions+1, groupSize, groupIds, datasetPtr, computePearsonCorrelation, 2, arrayOfArraysPreviouslySuggestedMoviesIdsAtIteration, arrayNumSuggestedMoviesAtIteration);
+    computeGroupRecommendationsSequential(numSuggestions, groupSize, groupIds, datasetPtr, computePearsonCorrelation, 0, arrayOfArraysPreviouslySuggestedMoviesIdsAtIteration, arrayNumSuggestedMoviesAtIteration, alphaMaxMinusMin);
+    computeGroupRecommendationsSequential(numSuggestions, groupSize, groupIds, datasetPtr, computePearsonCorrelation, 1, arrayOfArraysPreviouslySuggestedMoviesIdsAtIteration, arrayNumSuggestedMoviesAtIteration, alphaMaxMinusMin);
+    computeGroupRecommendationsSequential(numSuggestions+1, groupSize, groupIds, datasetPtr, computePearsonCorrelation, 2, arrayOfArraysPreviouslySuggestedMoviesIdsAtIteration, arrayNumSuggestedMoviesAtIteration, alphaMaxMinusMin);
     end = clock();
     elapsed = ((double)(end-start))/CLOCKS_PER_SEC;
     printf("suggestions for group at iteration [%d]\n", 0);
@@ -115,11 +115,28 @@ int main() {
     printf("suggestions for group at iteration [%d]\n", 2);
     printIntArray(arrayOfArraysPreviouslySuggestedMoviesIdsAtIteration[2], arrayNumSuggestedMoviesAtIteration[2]);
     printf("time to compute group recommentations sequentially (3 iterations): [%f sec]\n", elapsed);
-    
-    // freeing heap
-    freeDataset(datasetPtr);
     for (int i = 0; i < 3; i++)
         free(arrayOfArraysPreviouslySuggestedMoviesIdsAtIteration[i]);
+
+    // computing group suggestions sequentially with alpha as standard deviation
+    start = clock();
+    printf("\nsequential suggestions for group with alpha as standard deviation:\n");
+    computeGroupRecommendationsSequential(numSuggestions, groupSize, groupIds, datasetPtr, computePearsonCorrelation, 0, arrayOfArraysPreviouslySuggestedMoviesIdsAtIteration, arrayNumSuggestedMoviesAtIteration, alphaStandardDeviation);
+    computeGroupRecommendationsSequential(numSuggestions, groupSize, groupIds, datasetPtr, computePearsonCorrelation, 1, arrayOfArraysPreviouslySuggestedMoviesIdsAtIteration, arrayNumSuggestedMoviesAtIteration, alphaStandardDeviation);
+    computeGroupRecommendationsSequential(numSuggestions+1, groupSize, groupIds, datasetPtr, computePearsonCorrelation, 2, arrayOfArraysPreviouslySuggestedMoviesIdsAtIteration, arrayNumSuggestedMoviesAtIteration, alphaStandardDeviation);
+    end = clock();
+    elapsed = ((double)(end-start))/CLOCKS_PER_SEC;
+    printf("suggestions for group at iteration [%d]\n", 0);
+    printIntArray(arrayOfArraysPreviouslySuggestedMoviesIdsAtIteration[0], arrayNumSuggestedMoviesAtIteration[0]);
+    printf("suggestions for group at iteration [%d]\n", 1);
+    printIntArray(arrayOfArraysPreviouslySuggestedMoviesIdsAtIteration[1], arrayNumSuggestedMoviesAtIteration[1]);
+    printf("suggestions for group at iteration [%d]\n", 2);
+    printIntArray(arrayOfArraysPreviouslySuggestedMoviesIdsAtIteration[2], arrayNumSuggestedMoviesAtIteration[2]);
+    printf("time to compute group recommentations sequentially (3 iterations): [%f sec]\n", elapsed);
+    for (int i = 0; i < 3; i++)
+        free(arrayOfArraysPreviouslySuggestedMoviesIdsAtIteration[i]);
+
+    freeDataset(datasetPtr);
 
     endTotal = clock();
     elapsed = ((double)(endTotal-startTotal))/CLOCKS_PER_SEC;

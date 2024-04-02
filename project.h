@@ -254,8 +254,91 @@ void computeGroupRecommendationsWithDisagreement(int numSuggestions, int groupSi
         free(arrayOfArraysUserMoviesOrderPreference[i]);
 }
 
+float alphaMaxMinusMin(float* arraySatisfactionPerUser, int groupSize) {
+    int maxPos = findMaxPositionInFloatArray(arraySatisfactionPerUser, groupSize);
+    float min = findMinInFloatArray(arraySatisfactionPerUser, groupSize);
+    float alpha = arraySatisfactionPerUser[maxPos]-min;
+    return alpha;
+}
+
+float alphaStandardDeviation(float* arraySatisfactionPerUser, int groupSize) {
+    float numerator = 0.0;
+    float average = 0.0;
+    for (int i = 0; i < groupSize; i++)
+        average += arraySatisfactionPerUser[i];
+    average = average / groupSize;
+    for (int i = 0; i < groupSize; i++)
+        numerator += pow(arraySatisfactionPerUser[i]-average, 2);
+    return sqrt(numerator/(groupSize-1));
+}
+
 #define MAX_GROUP_SUGGESTIONS_NUM 25
 void computeGroupRecommendationsSequential(int numSuggestions, int groupSize, int* arrayGroupIds, Dataset* datasetPtr, float (*functionComputeSimilarity)(User*, User*),
+                    int numIterations, int** arrayOfArraysPreviouslySuggestedMoviesIdsAtIteration, int* arrayNumSuggestedMoviesAtIteration,
+                    float (*functionComputeAlpha)(float*, int)) {
+    if (numIterations == 0) {
+        float ratings[numSuggestions];
+        int* movieIds = (int*)malloc(numSuggestions*sizeof(int));
+        computeGroupRecommendationsAverage(numSuggestions, groupSize, arrayGroupIds, datasetPtr, functionComputeSimilarity, movieIds, ratings);
+        arrayOfArraysPreviouslySuggestedMoviesIdsAtIteration[0] = movieIds;
+        arrayNumSuggestedMoviesAtIteration[0] = numSuggestions;
+        return;
+    }
+    float arraySatisfactionPerUser[groupSize];
+    for (int i = 0; i < groupSize; i++) {
+        User* userPtr = getUserById(datasetPtr, arrayGroupIds[i]);
+        float arrayMoviesRatingsCopy[userPtr->numRatings];
+        for (int j = 0; j < userPtr->numRatings; j++)
+            arrayMoviesRatingsCopy[j] = userPtr->arrayMoviesRatings[j];
+        quickSort(arrayMoviesRatingsCopy, userPtr->numRatings);
+        float overallSatisfaction = 0.0;
+        for (int j = 0; j < numIterations; j++) {
+            float numerator = 0.0;
+            float denominator = 0.0;
+            int* arrayMoviesIdsAtIteration = arrayOfArraysPreviouslySuggestedMoviesIdsAtIteration[j];
+            int numMovies = arrayNumSuggestedMoviesAtIteration[j];
+            for (int k = 0; k < numMovies; k++) {
+                numerator += predictUserRatingForMovie(datasetPtr, arrayGroupIds[i], arrayMoviesIdsAtIteration[k], functionComputeSimilarity);
+                denominator += arrayMoviesRatingsCopy[userPtr->numRatings-1-k];
+            }
+            overallSatisfaction += (numerator/denominator);
+        }
+        overallSatisfaction = overallSatisfaction/numIterations;
+        arraySatisfactionPerUser[i] = overallSatisfaction;
+    }
+    printf("satisfaction per user at iteration [%d]:\n", numIterations);
+    printFloatArray(arraySatisfactionPerUser, groupSize);
+    float alpha = functionComputeAlpha(arraySatisfactionPerUser, groupSize);
+    printf("alpha: [%f]\n", alpha);
+    int arrayMoviesIdsOutput[MAX_GROUP_SUGGESTIONS_NUM];
+    float arrayMoviesScores[MAX_GROUP_SUGGESTIONS_NUM];
+    computeGroupRecommendationsAlpha(MAX_GROUP_SUGGESTIONS_NUM, groupSize, arrayGroupIds, datasetPtr, functionComputeSimilarity,
+                                alpha, arrayMoviesIdsOutput, arrayMoviesScores);
+    int numAddedSuggestions = 0;
+    arrayOfArraysPreviouslySuggestedMoviesIdsAtIteration[numIterations] = (int*)malloc(numSuggestions*sizeof(int));
+    arrayNumSuggestedMoviesAtIteration[numIterations] = numSuggestions;
+    for (int i = 0; i < MAX_GROUP_SUGGESTIONS_NUM; i++) {
+        int movieId = arrayMoviesIdsOutput[i];
+        if (numAddedSuggestions == numSuggestions) break;
+        int alreadySuggestedInThePast = 0;
+        for (int j = 0; j < numIterations; j++) {
+            int* moviesIds = arrayOfArraysPreviouslySuggestedMoviesIdsAtIteration[j];
+            int numMovies = arrayNumSuggestedMoviesAtIteration[j];
+            for (int k = 0; k < numMovies; k++) {
+                if (isInIntArray(moviesIds, movieId, arrayNumSuggestedMoviesAtIteration[j])) {
+                    alreadySuggestedInThePast = 1;
+                    break;
+                }
+            }
+        }
+        if (alreadySuggestedInThePast) continue;
+        arrayOfArraysPreviouslySuggestedMoviesIdsAtIteration[numIterations][numAddedSuggestions] = movieId;
+        numAddedSuggestions++;
+    }    
+}
+
+// instead of the alpha defined before we use the standard deviation of satisfaction
+void computeGroupRecommendationsSequentialSD(int numSuggestions, int groupSize, int* arrayGroupIds, Dataset* datasetPtr, float (*functionComputeSimilarity)(User*, User*),
                     int numIterations, int** arrayOfArraysPreviouslySuggestedMoviesIdsAtIteration, int* arrayNumSuggestedMoviesAtIteration) {
     if (numIterations == 0) {
         float ratings[numSuggestions];
