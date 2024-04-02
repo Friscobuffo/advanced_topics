@@ -70,7 +70,7 @@ int main() {
     // computing group suggestions
     start = clock();
     int groupSize = 3;
-    int groupIds[3] = {10, 37, 500};
+    int groupIds[3] = {100, 37, 500};
     int numGroupSuggestions = 10;
     int arrayGroupMoviesSuggestionsIds[numGroupSuggestions];
     float arrayGroupMoviesSuggestionsScores[numGroupSuggestions];

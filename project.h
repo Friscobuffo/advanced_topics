@@ -46,6 +46,22 @@ float computePearsonCorrelation(User* user1ptr, User* user2ptr) {
     return numerator / sqrt(denominator1*denominator2);
 }
 
+float computeJaccardIndex(User* user1ptr, User* user2ptr) {
+    int numerator = 0;
+    int denominator = user1ptr->numRatings;
+    HashMap* user2ratingsMap = user2ptr->mapMovieIdRating;
+    int* arrayUser1moviesIds = user1ptr->arrayMoviesIds;
+    for (int i = 0; i < user1ptr->numRatings; i++)
+        if (getValueFromHashMap(user2ratingsMap, arrayUser1moviesIds[i]) != -1)
+            numerator++;
+    HashMap* user1ratingsMap = user1ptr->mapMovieIdRating;
+    int* arrayUser2moviesIds = user2ptr->arrayMoviesIds;
+    for (int i = 0; i < user2ptr->numRatings; i++)
+        if (getValueFromHashMap(user1ratingsMap, arrayUser2moviesIds[i]) == -1)
+            denominator++;
+    return 2*(0.5-numerator/(float)denominator);
+}
+
 float computeSimilarityBetweenUsersById(Dataset* datasetPtr, int user1id, int user2id, 
                                         float (*functionComputeSimilarity)(User*, User*)) {
     return functionComputeSimilarity(getUserById(datasetPtr, user1id), getUserById(datasetPtr, user2id));
