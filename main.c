@@ -35,7 +35,8 @@ int main() {
     int numMostSimilarUsers = 10;
     int arrayMostSimilarUsers[numMostSimilarUsers];
     float arrayMostSimilarUsersScores[numMostSimilarUsers];
-    computeMostSimilarUsers(numMostSimilarUsers, datasetPtr, user1, arrayMostSimilarUsers, arrayMostSimilarUsersScores, computePearsonCorrelation);
+    int numSimilarUsers;
+    computeMostSimilarUsers(numMostSimilarUsers, datasetPtr, user1, arrayMostSimilarUsers, arrayMostSimilarUsersScores, computePearsonCorrelation, &numSimilarUsers);
     end = clock();
     printf("\nmost similar users to user [%d]:\n", user1);
     printIntArray(arrayMostSimilarUsers, numMostSimilarUsers);

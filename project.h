@@ -17,26 +17,26 @@ float computePearsonCorrelation(User* user1ptr, User* user2ptr) {
     int* arrayUser1moviesIds = user1ptr->arrayMoviesIds;
     float* arrayUser1ratings = user1ptr->arrayMoviesRatings;
 
-    int sumUser1ratings = 0; // of movies in common
-    int sumUser2ratings = 0; // of movies in common
-    float numMoviesInCommon = 0;
+    float sumUser1ratings = 0; // of movies in common
+    float sumUser2ratings = 0; // of movies in common
+    int numMoviesInCommon = 0;
     for (int j = 0; j < user1numRatings; j++) {
         int movieId = arrayUser1moviesIds[j];
-        int ratingUser2 = getValueFromHashMap(user2ptr->mapMovieIdRating, movieId);
+        float ratingUser2 = getValueFromHashMap(user2ptr->mapMovieIdRating, movieId);
         if (ratingUser2 == -1) continue;
         sumUser1ratings += arrayUser1ratings[j];
         sumUser2ratings += ratingUser2;
         numMoviesInCommon++;
     }
-    float avgUser1ratings = sumUser1ratings / numMoviesInCommon; // of movies in common
-    float avgUser2ratings = sumUser2ratings / numMoviesInCommon; // of movies in common
+    float avgUser1ratings = sumUser1ratings / numMoviesInCommon;
+    float avgUser2ratings = sumUser2ratings / numMoviesInCommon;
 
     float numerator = 0;
     float denominator1 = 0;
     float denominator2 = 0;
     for (int j = 0; j < user1numRatings; j++) {
         int movieId = arrayUser1moviesIds[j];
-        int y = getValueFromHashMap(user2ptr->mapMovieIdRating, movieId);
+        float y = getValueFromHashMap(user2ptr->mapMovieIdRating, movieId);
         if (y == -1) continue;
         float x = arrayUser1ratings[j];
         numerator += (x-avgUser1ratings)*(y-avgUser2ratings);
@@ -49,17 +49,15 @@ float computePearsonCorrelation(User* user1ptr, User* user2ptr) {
 float computeJaccardIndex(User* user1ptr, User* user2ptr) {
     int numerator = 0;
     int denominator = user1ptr->numRatings;
-    HashMap* user2ratingsMap = user2ptr->mapMovieIdRating;
     int* arrayUser1moviesIds = user1ptr->arrayMoviesIds;
     for (int i = 0; i < user1ptr->numRatings; i++)
-        if (getValueFromHashMap(user2ratingsMap, arrayUser1moviesIds[i]) != -1)
+        if (isInIntArray(user2ptr->arrayMoviesIds, arrayUser1moviesIds[i], user2ptr->numRatings))
             numerator++;
-    HashMap* user1ratingsMap = user1ptr->mapMovieIdRating;
     int* arrayUser2moviesIds = user2ptr->arrayMoviesIds;
     for (int i = 0; i < user2ptr->numRatings; i++)
-        if (getValueFromHashMap(user1ratingsMap, arrayUser2moviesIds[i]) == -1)
+        if (!isInIntArray(user1ptr->arrayMoviesIds, arrayUser2moviesIds[i], user1ptr->numRatings))
             denominator++;
-    return 2*(0.5-numerator/(float)denominator);
+    return numerator/(float)denominator;
 }
 
 float computeSimilarityBetweenUsersById(Dataset* datasetPtr, int user1id, int user2id, 
@@ -68,7 +66,7 @@ float computeSimilarityBetweenUsersById(Dataset* datasetPtr, int user1id, int us
 }
 
 void computeMostSimilarUsers(int numSimilarUsers, Dataset* datasetPtr, int userId, int* arrayTopUsersIds, float* arrayTopUserScores,
-                            float (*functionComputeSimilarity)(User*, User*)) {
+                            float (*functionComputeSimilarity)(User*, User*), int* numAddedSimilarUsersPtr) {
     int numAddedUsers = 0;
     User* userPtr = getUserById(datasetPtr, userId);
     User** arrayUsers = datasetPtr->arrayUsers;
@@ -85,6 +83,7 @@ void computeMostSimilarUsers(int numSimilarUsers, Dataset* datasetPtr, int userI
             }
         }
     }
+    *numAddedSimilarUsersPtr = numAddedUsers;
 }
 
 # define MOST_SIMILAR_USERS_NUM 25
@@ -116,7 +115,7 @@ float predictUserRatingForMovie(Dataset* datasetPtr, int userId, int movieId,
     for (int i = 0; i < numAddedUsers; i++) {
         int similarUserId = arrayTopUsersIds[i];
         float similarUserScore = arrayTopUsersScores[i];
-        if (similarUserScore < 0.4) break;
+        if (similarUserScore < 0) break;
         User* similarUserPtr = getUserById(datasetPtr, similarUserId);
         int rating = getValueFromHashMap(similarUserPtr->mapMovieIdRating, movieId);
         predictNumerator += (similarUserScore*(rating-similarUserPtr->averageRating));
@@ -132,7 +131,8 @@ void computeBestMoviesForUser(int numSuggestions, int* arrayBestMoviesIds, float
                             int userId, float (*functionComputeSimilarity)(User*, User*)) {
     int arrayMostSimilarUsersIds[MOST_SIMILAR_USERS_NUM];
     float arrayMostSimilarUsersScores[MOST_SIMILAR_USERS_NUM];
-    computeMostSimilarUsers(MOST_SIMILAR_USERS_NUM, datasetPtr, userId, arrayMostSimilarUsersIds, arrayMostSimilarUsersScores, computePearsonCorrelation);
+    int numAddedSimilarUsers;
+    computeMostSimilarUsers(MOST_SIMILAR_USERS_NUM, datasetPtr, userId, arrayMostSimilarUsersIds, arrayMostSimilarUsersScores, computePearsonCorrelation, &numAddedSimilarUsers);
     int numAddedMovies = 0;
     User* userPtr = getUserById(datasetPtr, userId);
     for (int i = 0; i < MOST_SIMILAR_USERS_NUM; i++) {
